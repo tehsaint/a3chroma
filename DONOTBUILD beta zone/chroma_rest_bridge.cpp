@@ -1,3 +1,6 @@
+
+//     Razer Chroma Documentation
+//    https://assets.razerzone.com/dev_portal/REST/html/index.html
 #include <windows.h>
 #include <winhttp.h>
 #include <string>
