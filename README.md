@@ -2,6 +2,11 @@
 
 Proof-of-concept Arma 3 integration for Razer Chroma.
 
+# DISCLAIMER
+
+THIS IS A **WORK IN PROGRESS MOD**. COMPILE AT RISK, REVIEW IF WISHED.
+If you wish to contribute or give feedback, please message @teh.saint on discord, or on the ARMA discord.
+
 ## Structure
 
 - addons/chroma_rest_bridge.cpp: C++ source for the Windows DLL bridge
