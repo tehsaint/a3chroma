@@ -1,0 +1,11 @@
+name = "a3chroma";
+picture = "";
+author = "tehsaint";
+description = "Proof-of-concept Chroma integration for Arma 3";
+logo = "";
+logoOver = "";
+tooltip = "a3chroma";
+tooltipOwned = "a3chroma";
+overview = "A simple proof-of-concept bridge that sends Chroma events from Arma 3.";
+actionName = "GitHub";
+action = "https://github.com/tehsaint/a3chroma";

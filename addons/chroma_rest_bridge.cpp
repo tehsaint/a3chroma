@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream>
 #include <cstring>
+#include <cstdio>
 #include <thread>
 #include <atomic>
 
@@ -235,7 +236,7 @@ namespace {
 
 extern "C" {
     __declspec(dllexport) void __stdcall RVExtensionVersion(char* output, int outputSize) {
-        const char* version = "a3chroma-rest-3.0";
+        const char* version = "chroma_rest_bridge-1.0";
         strncpy_s(output, outputSize, version, _TRUNCATE);
     }
 
@@ -250,7 +251,7 @@ extern "C" {
             return;
         }
 
-        if (command == "flash_red_burst") {
+        if (command == "flash_white_50ms") {
             const std::string response = TriggerKeyboardEffect();
             strncpy_s(output, outputSize, response.c_str(), _TRUNCATE);
             return;
