@@ -1,3 +1,11 @@
+# DISCLAIMER
+
+THIS IS THE BETA OF THIS MOD, AND YOU SHOULD NOT COMPILE THIS. THIS **WILL** HAVE INCONPLETE CODE.
+BUILD THE .../@a3chroma INSTEAD
+
+_________
+
+
 # Chroma bridge notes
 
 This folder contains a Windows-native bridge concept for Arma 3.
