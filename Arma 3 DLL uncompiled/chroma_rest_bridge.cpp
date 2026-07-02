@@ -4,11 +4,14 @@
 #include <vector>
 #include <sstream>
 #include <cstring>
+#include <thread>
+#include <atomic>
 
 #pragma comment(lib, "winhttp.lib")
 
 namespace {
     std::string g_instanceUri;
+    std::atomic<bool> g_flashBusy{false};
 
     std::string Trim(const std::string& value) {
         const char* ws = " \t\r\n";
@@ -153,35 +156,79 @@ namespace {
         return "ok";
     }
 
-    std::string TriggerKeyboardEffect() {
-        if (g_instanceUri.empty()) {
-            const std::string initResult = InitializeChroma();
-            if (initResult != "ok") {
-                return initResult;
-            }
+    // Resolves and caches the keyboard effect path from the current instance
+    // URI. Kept separate from SetKeyboardEffect so the burst loop below
+    // doesn't re-parse the URI on every single flash.
+    bool ResolveKeyboardEndpoint(std::string* host, INTERNET_PORT* port, std::string* path) {
+        if (!ParseUri(g_instanceUri, host, port, path)) {
+            return false;
+        }
+
+        if (path->empty() || *path == "/") {
+            *path = "/chromasdk/keyboard";
+        } else if (path->find("/keyboard") == std::string::npos && path->find("/chromasdk") != std::string::npos) {
+            *path += "/keyboard";
+        } else if (path->find("/keyboard") == std::string::npos) {
+            *path = "/chromasdk/keyboard";
+        }
+        return true;
+    }
+
+    // color: packed as 0x00BBGGRR (Chroma's native format, NOT standard RGB
+    // hex). Pure red is 0x0000FF (255), not 0xFF0000 -- that's blue.
+    std::string SetKeyboardEffect(const std::string& host, INTERNET_PORT port,
+                                   const std::string& path, unsigned int bgrColor) {
+        char bodyBuf[128];
+        snprintf(bodyBuf, sizeof(bodyBuf),
+            "{\"effect\":\"CHROMA_STATIC\",\"param\":{\"color\":%u}}", bgrColor);
+        std::string response;
+        return SendJsonRequest(host, port, path, "PUT", bodyBuf, &response);
+    }
+
+    std::string SetKeyboardOff(const std::string& host, INTERNET_PORT port, const std::string& path) {
+        std::string response;
+        return SendJsonRequest(host, port, path, "PUT", "{\"effect\":\"CHROMA_NONE\"}", &response);
+    }
+
+    // Correct BGR packing for pure red.
+    const unsigned int COLOR_RED_BGR = 0x000000FF;
+
+    // Runs on its own thread -- RVExtension returns immediately after
+    // launching this, so callExtension doesn't block the game for the full
+    // duration of the flash sequence.
+    void FlashRedBurstWorker() {
+        if (g_flashBusy.exchange(true)) {
+            return; // a burst is already running, skip overlap
+        }
+
+        if (g_instanceUri.empty() && InitializeChroma() != "ok") {
+            g_flashBusy = false;
+            return;
         }
 
         std::string host;
         INTERNET_PORT port = 0;
         std::string path;
-        if (!ParseUri(g_instanceUri, &host, &port, &path)) {
-            return "error:parse-uri";
+        if (!ResolveKeyboardEndpoint(&host, &port, &path)) {
+            g_flashBusy = false;
+            return;
         }
 
-        if (path.empty() || path == "/") {
-            path = "/chromasdk/keyboard";
-        } else if (path.find("/keyboard") == std::string::npos && path.find("/chromasdk") != std::string::npos) {
-            path += "/keyboard";
-        } else if (path.find("/keyboard") == std::string::npos) {
-            path = "/chromasdk/keyboard";
+        for (int i = 0; i < 3; ++i) {
+            SetKeyboardEffect(host, port, path, COLOR_RED_BGR);
+            Sleep(90);
+            SetKeyboardOff(host, port, path);
+            Sleep(90);
         }
 
-        const std::string body = "{\"effect\":\"CHROMA_STATIC\",\"param\":{\"color\":16711680}}";
-        std::string response;
-        const std::string result = SendJsonRequest(host, port, path, "POST", body, &response);
-        if (result != "ok") {
-            return result;
-        }
+        g_flashBusy = false;
+    }
+
+    // Called from RVExtension. Launches the burst on a background thread
+    // and returns immediately, regardless of whether one was already
+    // running (the busy-guard inside the worker handles that case).
+    std::string TriggerKeyboardEffect() {
+        std::thread(FlashRedBurstWorker).detach();
         return "ok";
     }
 }

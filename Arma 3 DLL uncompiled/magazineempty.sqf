@@ -1,7 +1,7 @@
 // Simple Chroma test: when the player fires a weapon, flash the keyboard white for 50 ms.
 // Put this in your mission folder and run it from initPlayerLocal.sqf.
 //
-// This is meant to be a simple proof-of-concept check:
+// This is meant to fo two simply things:
 // 1. On startup, initialize the Chroma extension.
 // 2. On a real fire event, trigger a short white flash.
 
